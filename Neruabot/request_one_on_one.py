@@ -2,15 +2,16 @@ from disnake.ext import commands
 import disnake
 import textwrap
 
+
 class requestTutor(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     async def format_embed(self, inter: disnake.CommandInteraction, name, class_, additional_info, **kwargs):
         description = textwrap.dedent(f"""
-        Name: {name}
-        Class: {class_}
-        Additional Information: {additional_info}
+        `Name`: {name}
+        `Class`: {class_}
+        `Additional Information`: {additional_info}
         """)
         embed = disnake.Embed(title=kwargs['title'], description=description, colour=disnake.Colour.fuchsia())
 
@@ -33,9 +34,25 @@ class requestTutor(commands.Cog):
         additional_info: Feel free to provide any additional info if you want to, this field is not required!
         inter: discord interaction
         """
-        embed = await self.format_embed(inter, name, your_class, additional_info, title="Success!", footer_text="A new request has been sent!")
+        embed = await self.format_embed(inter, name, your_class, additional_info, title="Success!",
+                                        footer_text="A new request has been sent!")
         await inter.response.send_message(content="**Someone will assist you soon!**", embed=embed, ephemeral=True)
         channel = self.bot.get_channel(980145969465290753)
-        embed = await self.format_embed(inter, name, your_class, additional_info, title="New Request!", footer_text="A new request has appeared!")
-        m = await channel.send(content="<@&980144866384302222> A new request has appeared!\nReact to claim the role to help/tutor this student.", embed=embed)
+        embed = await self.format_embed(inter, name, your_class, additional_info, title="New Request!",
+                                        footer_text="A new request has appeared!")
+
+        # <@&980144866384302222> A new request has appeared!\nReact to claim the role to help/tutor this student.
+
+        m = await channel.send(
+            content="A new request has appeared!\nReact to claim the role to help/tutor this student.", embed=embed)
         await m.add_reaction("<:Neuracode:982843662687940638>")
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload: disnake.RawReactionActionEvent):
+        channel = self.bot.get_channel(payload.channel_id)
+        guild = self.bot.get_guild(payload.guild_id)
+        if channel.id != 980145969465290753 or payload.user_id == 982834951303102546:
+            return
+        sessions = disnake.utils.get(guild.categories, name="Sessions")
+        await sessions.create_text_channel(name=f"Session {len(sessions.text_channels)+1}")
+        print(channel.name)
