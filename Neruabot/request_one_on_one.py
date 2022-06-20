@@ -1,13 +1,14 @@
 from disnake.ext import commands
 import disnake
 import textwrap
-import json
+from Neruabot.utils.json_files import write_json_data, read_json_data
 
 
 class requestTutor(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.session_path = "sessions.json"
+        self.session_path = "students.json"
+        self.teachers = "teachers.json"
 
     async def format_embed(self, inter: disnake.CommandInteraction, name, class_, additional_info, user_id=None,
                            **kwargs):
@@ -63,21 +64,23 @@ class requestTutor(commands.Cog):
 
         student_data = {"name": name, "class": your_class, "info": additional_info}
 
-        with open(self.session_path, 'r') as openfile:
-            data = json.load(openfile)
+        data = read_json_data(self.session_path)
 
         try:
             for values in data[str(inter.user.id)]:
                 if values == student_data:
                     return
-            data[str(inter.user.id)].append(student_data)
+            data[str(inter.user.id)]["courses"].append(student_data)
         except KeyError:
-            data[str(inter.user.id)] = []
-            data[str(inter.user.id)].append(student_data)
+            data[str(inter.user.id)] = {
+                "courses": [],
+                "invc": "False",
+                "svc": "Flase",
+                "vcid": None
+            }
+            data[str(inter.user.id)]["courses"].append(student_data)
 
-        json_object = json.dumps(data, indent=4)
-        with open(self.session_path, "w") as outfile:
-            outfile.write(json_object)
+        write_json_data(data, self.session_path)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: disnake.RawReactionActionEvent):
@@ -87,8 +90,7 @@ class requestTutor(commands.Cog):
         if channel.id != 980145969465290753 or payload.user_id == 982834951303102546 or payload.emoji.id != 982843662687940638:
             return
         sessions = disnake.utils.get(guild.categories, name="Private Sessions")
-        with open(self.session_path, 'r') as openfile:
-            data = json.load(openfile)
+        data = read_json_data(self.session_path)
 
         found = False
         class_ = None
@@ -99,12 +101,14 @@ class requestTutor(commands.Cog):
                 if found:
                     continue
                 found = True
-                embed_dict = message.embeds[0].to_dict()
-                user_id = int(embed_dict['description'].split("\n")[3].split(": ")[1])
-                student = disnake.utils.get(guild.members, id=user_id)
-                class_ = embed_dict['description'].split("\n")[1].split(": ")[1]
-                course_list = data[str(user_id)]
-                await message.edit(content=f"Success! \n{user.mention} claimed the course request from {student.display_name} for {class_}!", embeds=[])
+                try:
+                    embed_dict = message.embeds[0].to_dict()
+                    user_id = int(embed_dict['description'].split("\n")[3].split(": ")[1])
+                    student = disnake.utils.get(guild.members, id=user_id)
+                    class_ = embed_dict['description'].split("\n")[1].split(": ")[1]
+                    await message.edit(content=f"Success! \n{user.mention} claimed the course request from {student.display_name} for {class_}!", embeds=[])
+                except IndexError:
+                    return
 
         student = disnake.utils.get(guild.members, id=user_id)
         overwrites = {
@@ -123,3 +127,19 @@ class requestTutor(commands.Cog):
         """)
         embed = disnake.Embed(title="You have a tutor!", description=description)
         await channel.send(content=f"{student.mention} say hi to your teacher for `{class_}`: {user.mention}👋!", embed=embed)
+
+        teacher = user
+        teacher_data = read_json_data(self.teachers)
+        try:
+            teacher_data[teacher.id]["students"].append(student.id)
+        except KeyError:
+            teacher_data[teacher.id] = {
+                "students": [
+                ],
+                "invc": "False",
+                "svc": "Flase",
+                "vcid": None,
+                "with_who_vc": None
+            }
+            teacher_data[teacher.id]["students"].append(student.id)
+        return

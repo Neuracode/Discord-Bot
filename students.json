@@ -1,0 +1,20 @@
+{
+    "742015954967593101": {
+        "courses": [
+            {
+                "name": "Eddie Tang",
+                "class": "Intro to ML",
+                "info": null
+            },
+            {
+                "name": "Eddie",
+                "class": "Intro to Python",
+                "info": null
+            }
+        ],
+        "invc": "False",
+        "svc": "Flase",
+        "vcid": null,
+        "with_who_vc": null
+    }
+}
