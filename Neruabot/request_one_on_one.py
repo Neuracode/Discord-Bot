@@ -82,7 +82,7 @@ class requestTutor(commands.Cog):
 
         write_json_data(data, self.session_path)
 
-    @commands.Cog.listener()
+    '''@commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: disnake.RawReactionActionEvent):
         channel = self.bot.get_channel(payload.channel_id)
         guild = self.bot.get_guild(payload.guild_id)
@@ -143,3 +143,4 @@ class requestTutor(commands.Cog):
             }
             teacher_data[teacher.id]["students"].append(student.id)
         return
+'''
