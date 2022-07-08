@@ -6,7 +6,7 @@ from firebase_admin import db
 class Access():
     def __init__(self, students_or_teachers="teachers"):
         cred = firebase_admin.credentials.Certificate(
-            'Neruabot/Firebase/neuracode-discord-bot-firebase-adminsdk-mor5r-5576ccdbbf.json')
+            'Neruabot/Firebase/admin.json')
         self.default_app = firebase_admin.initialize_app(cred, {
             "databaseURL": "https://neuracode-discord-bot-default-rtdb.firebaseio.com/"})
 
