@@ -10,6 +10,7 @@ class createVc(commands.Cog):
         return
 
     @commands.slash_command(name="start_vc", guild_ids=[941049795949264969])
+
     async def start_vc(self,
                        inter: disnake.CommandInteraction,
                        student: disnake.User,

@@ -1,0 +1,32 @@
+{
+    "students": {
+        "742015954967593101": {
+            "courses": [
+                {
+                    "name": "Eddie Tang",
+                    "class": "Intro to ML",
+                    "info": null
+                },
+                {
+                    "name": "Eddie",
+                    "class": "Intro to Python",
+                    "info": null
+                }
+            ]
+        },
+        "688572232087371955": {
+            "courses": [
+                {
+                    "name": "Azam Ahmed",
+                    "class": "Intro to ML",
+                    "info": "I need tutoring"
+                }
+            ]
+        }
+    },
+    "teachers": {
+        "742015954967593101": {
+            "hours": 10
+        }
+    }
+}

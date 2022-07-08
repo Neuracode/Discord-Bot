@@ -7,8 +7,7 @@ from Neruabot.utils.json_files import write_json_data, read_json_data
 class requestTutor(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.session_path = "students.json"
-        self.teachers = "teachers.json"
+        self.session_path = "data.json"
 
     async def format_embed(self, inter: disnake.CommandInteraction, name, class_, additional_info, user_id=None,
                            **kwargs):
@@ -34,8 +33,8 @@ class requestTutor(commands.Cog):
     @commands.slash_command(name="request_tutor",
                             guild_ids=[941049795949264969])
     async def request_one_to_one(self, inter: disnake.CommandInteraction,
-                                 your_name,
-                                 your_class,
+                                 your_name: str,
+                                 your_class: str,
                                  additional_info=None):
         """
         Send a request to tutor to get one-on-one tutoring about coding
@@ -63,26 +62,28 @@ class requestTutor(commands.Cog):
         await m.add_reaction("<:Neuracode:982843662687940638>")
 
         student_data = {"name": name, "class": your_class, "info": additional_info}
+        copy_student_data = {"name": name.lower(), "class": your_class.lower()}
 
         data = read_json_data(self.session_path)
 
         try:
-            for values in data[str(inter.user.id)]:
-                if values == student_data:
+            for value in data['students'][str(inter.user.id)]:
+                # repetition checker
+                value['name'] = value['name'].lower()
+                value['class'] = value['class'].lower()
+                if copy_student_data in value:
                     return
-            data[str(inter.user.id)]["courses"].append(student_data)
+            data['students'][str(inter.user.id)]["courses"].append(student_data)
         except KeyError:
-            data[str(inter.user.id)] = {
-                "courses": [],
-                "invc": "False",
-                "svc": "Flase",
-                "vcid": None
+            data['students'][str(inter.user.id)] = {
+                'courses': []
             }
-            data[str(inter.user.id)]["courses"].append(student_data)
+            data['students'][str(inter.user.id)]["courses"].append(student_data)
 
         write_json_data(data, self.session_path)
 
-    '''@commands.Cog.listener()
+    '''
+    @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: disnake.RawReactionActionEvent):
         channel = self.bot.get_channel(payload.channel_id)
         guild = self.bot.get_guild(payload.guild_id)
