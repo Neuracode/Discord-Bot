@@ -13,7 +13,7 @@ class LogHours(commands.Cog):
         self.path = "data.json"
 
     @commands.slash_command(name="view",
-                            guild_ids=[941049795949264969, 991799149357957230])
+                            guild_ids=[constants['ids']['main server']['id'], constants['ids']['tutor server']['id']])
     async def view_hours(self, inter: disnake.CommandInteraction, user: disnake.User = None, view_all: bool = False):
         """
         Views volunteer hours
@@ -39,30 +39,22 @@ class LogHours(commands.Cog):
             await inter.response.send_message(embed=embed)
 
         elif view_all:
+            embed = disnake.Embed(title="All avaliable volunteer hours", colour=disnake.Colour.random())
             all_dict = self.access.view_all_hours("teachers")
             new_dict = {}
             for key, val in all_dict.items():
                 userrr = self.bot.get_user(int(key))
                 name = userrr.display_name
                 new_dict[name] = val
-            description = "```"
             for key, val in new_dict.items():
-                string = textwrap.dedent(f"""
-                |{key}
-                \t|
-                \t|——hours
-                \t\t|
-                \t\t|——{val['hours']}\n
-                """)
-                description += string
-            description += "```"
-            embed = disnake.Embed(title="All avaliable volunteer hours", description=description, colour=disnake.Colour.random())
+                embed.add_field(name=f"{key}", value=f"Hours:`{val['hours']}`")
+            embed.set_footer(text=f"Requested by {inter.author.display_name}", icon_url=inter.author.avatar.url)
             await inter.response.send_message(embed=embed)
 
 
     @commands.slash_command(name="removehours",
-                            guild_ids=[941049795949264969, 991799149357957230])
-    async def remove_volunteer_hours(self, inter: disnake.CommandInteraction, user: disnake.User, hours: int):
+                            guild_ids=[constants['ids']['main server']['id'], constants['ids']['tutor server']['id']])
+    async def remove_volunteer_hours(self, inter: disnake.CommandInteraction, user: disnake.User, hours: float):
         """
         Removes a user's volunteer hours - only works for admin.
 
@@ -74,18 +66,18 @@ class LogHours(commands.Cog):
         """
         userr = inter.author
         role_ids = [roles.id for roles in userr.roles]
-        if inter.guild_id == 941049795949264969:
+        if inter.guild_id == constants['ids']['main server']['id']:
             # mod id
-            if 941049795949264970 not in role_ids:
+            if constants['ids']['main server']['hour'] not in role_ids:
                 await inter.response.send_message(constants['errors']['role'])
                 return
 
             self.access.remove_hours("teachers", user.id, hours)
             await inter.response.send_message(f"Removed `{hours}` hours from {user.mention}")
 
-        elif inter.guild_id == 991799149357957230:
+        elif inter.guild_id == constants['ids']['tutor server']['id']:
             # admin id
-            if 991803685967495388 not in role_ids:
+            if constants['ids']['tutor server']['hour'] not in role_ids:
                 await inter.response.send_message(
                     constants['errors']['role'])
                 return
@@ -94,8 +86,8 @@ class LogHours(commands.Cog):
             await inter.response.send_message(f"Removed `{hours}` hours from {user.mention}")
 
     @commands.slash_command(name="loghours",
-                            guild_ids=[941049795949264969, 991799149357957230])
-    async def log_volunteer_hours(self, inter: disnake.CommandInteraction, hours: int, reason: str):
+                            guild_ids=[constants['ids']['main server']['id'], constants['ids']['tutor server']['id']])
+    async def log_volunteer_hours(self, inter: disnake.CommandInteraction, hours: float, reason: str):
         """
         Logs your volunteer hours to a database.
 
@@ -118,24 +110,19 @@ class LogHours(commands.Cog):
                                 """), colour=disnake.Colour.og_blurple()
                               )
 
-        # main server id, volunteer role id, volunteer server id
-        if inter.guild_id == 941049795949264969:
-            if 980144866384302222 not in role_ids:
+        if inter.guild_id == constants['ids']['main server']['id']:
+            if constants['ids']['main server']['vol'] not in role_ids:
                 await inter.response.send_message("Sorry but the system detected that you are not a volunteer")
                 return
 
-            # channel for the main guild where the people approve volunteer hours
-            channel = self.bot.get_channel(994953449873621002)
-            # the admin role in that server
-            m = await channel.send("<@&941049795949264970>", embed=embed)
+            channel = self.bot.get_channel(constants['ids']['main server']['approve'])
+            m = await channel.send(f"<@&{constants['ids']['main server']['hour']}>", embed=embed)
             await m.add_reaction("✅")
             await m.add_reaction("❌")
 
-        elif inter.guild_id == 991799149357957230:
-            # channel for approval
-            channel = self.bot.get_channel(994796686218100770)
-            # the admin role in that server
-            m = await channel.send("<@&991803685967495388>", embed=embed)
+        elif inter.guild_id == constants['ids']['tutor server']['id']:
+            channel = self.bot.get_channel(constants['ids']['tutor server']['approve'])
+            m = await channel.send(f"<@&{constants['ids']['tutor server']['hour']}>", embed=embed)
             await m.add_reaction("✅")
             await m.add_reaction("❌")
 
@@ -146,10 +133,10 @@ class LogHours(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: disnake.RawReactionActionEvent):
-        if payload.user_id == 982834951303102546:
+        if payload.user_id == constants['ids']['bot']['id']:
             return
-        if str(payload.emoji) == "✅" or "❌" and payload.guild_id == 991799149357957230 or 941049795949264969 and \
-                payload.channel_id == 994953449873621002 or 994796686218100770:
+        if str(payload.emoji) == "✅" or "❌" and payload.guild_id == constants['ids']['main server']['id'] or constants['ids']['tutor server']['id'] and \
+                payload.channel_id == constants['ids']['main server']['approve'] or constants['ids']['tutor server']['approve']:
             try:
                 channel = self.bot.get_channel(payload.channel_id)
 
@@ -157,18 +144,20 @@ class LogHours(commands.Cog):
                 for msg in messages:
                     if msg.id == payload.message_id:
                         embed = msg.embeds[0].to_dict()
+
                         str_person_id = str(embed['description'].split(">")[0].strip("<@!"))
+                        reason = str(embed['description']).split("\n\n")[0].split("\n")[1].split(": ")[1].strip("`")
                         person = self.bot.get_user(int(str_person_id))
-                        hours = int(embed['description'].split("\n\n")[1].split('\n')[1].split(": ")[1].strip("`"))
+                        hours = float(embed['description'].split("\n\n")[1].split('\n')[1].split(": ")[1].strip("`"))
 
                         if str(payload.emoji) == "✅":
-                            await msg.edit(f"Volunteer Hours Approved! 📝✍\n Action done by: {self.bot.get_user(payload.user_id).mention}", embeds=[])
+                            await msg.edit(f"Volunteer Hours Approved! 📝✍\n Action done by: {self.bot.get_user(payload.user_id).mention}\n Info: ```By: {person.display_name}\nReason:{reason}```", embeds=[])
                             self.access.add_hours("teachers", str_person_id, hours)
                             await person.send(
                                 f"Volunteer Hours Approved! 📝✍!\nYour `{hours}` were approved, you can check it by sending the command `/view`!")
 
                         if str(payload.emoji) == "❌":
-                            await msg.edit(f"Volunteer Hours Request Ignored!⛔\n Action done by: {self.bot.get_user(payload.user_id).mention}", embeds=[])
+                            await msg.edit(f"Volunteer Hours Ignored! ⛔\n Action done by: {self.bot.get_user(payload.user_id).mention}\n Info: ```By: {person.display_name}\nReason:{reason}```", embeds=[])
             except IndexError:
                 return
         else:
